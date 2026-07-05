@@ -15,10 +15,25 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
+
     if not data or not data.get("username") or not data.get("password"):
         return jsonify({"error": "Username and password required"}), 400
 
+    print("========================================")
+    print("LOGIN ATTEMPT")
+    print("Username entered:", data["username"])
+
     user = User.query.filter_by(username=data["username"]).first()
+
+    print("User found:", user is not None)
+
+    if user:
+        print("Database username:", user.username)
+        print("Role:", user.role)
+        print("Password valid:", user.check_password(data["password"]))
+
+    print("========================================")
+
     if not user or not user.check_password(data["password"]):
         return jsonify({"error": "Invalid credentials"}), 401
 
@@ -70,6 +85,7 @@ def register():
         return jsonify({"error": "Admin access required"}), 403
 
     data = request.get_json()
+
     if User.query.filter_by(username=data["username"]).first():
         return jsonify({"error": "Username already exists"}), 409
 
@@ -78,7 +94,9 @@ def register():
         role=data.get("role", "student"),
         roll_no=data.get("roll_no")
     )
+
     user.set_password(data["password"])
+
     db.session.add(user)
     db.session.commit()
 
@@ -93,6 +111,7 @@ def change_password():
     data = request.get_json()
 
     user = User.query.get(user_id)
+
     if not user.check_password(data.get("current_password", "")):
         return jsonify({"error": "Current password incorrect"}), 400
 
